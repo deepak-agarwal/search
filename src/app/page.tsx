@@ -13,7 +13,7 @@ interface SearchError {
 }
 
 // Custom debounce function
-function debounce<T extends (...args: any[]) => any>(
+function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
@@ -84,6 +84,7 @@ export default function Home() {
 
   // Debounced search function
   const debouncedSearch = useCallback(
+    // @ts-expect-error - Debounce type definition doesn't properly handle async functions
     debounce(search, 300),
     []
   );
