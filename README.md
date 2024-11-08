@@ -1,32 +1,34 @@
-# Fast Country Search
+# Fast Country Search Comparison
 
 ## 🔗 [Demo](https://search-omop.vercel.app/)
 
-A high-performance country search application built with Next.js, Redis, and Cloudflare Workers, providing real-time search suggestions with response times under 300ms.
+A high-performance country search application comparing Redis and Cloudflare KV performance, built with Next.js, providing real-time search suggestions with response time comparisons.
 
 ## 🚀 Features
 
 - Real-time country search with prefix matching
+- Performance comparison between Redis and Cloudflare KV
 - Sub-300ms response times
-- Dark/Light theme support
+- Dark/Light theme support using Shadcn/ui
 - Type-safe implementation
 - Edge computing with Cloudflare Workers
-- Redis-powered search index
+- Redis and KV-powered search indexes
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: Next.js, TypeScript, Tailwind CSS
+- **Frontend**: Next.js, TypeScript, Tailwind CSS, Shadcn/ui
 - **Backend**: Cloudflare Workers, Hono
-- **Database**: Redis (Upstash)
+- **Database**: Redis (Upstash), Cloudflare KV
 - **Deployment**: Vercel (Frontend), Cloudflare (API)
 
 ## 🏗️ Architecture
 
-The application is built with three main components:
+The application is built with four main components:
 
-1. **Next.js Frontend**: Handles user interface and search interactions
-2. **Redis Database**: Stores and indexes country data
-3. **Cloudflare Workers API**: Processes search requests at the edge
+1. **Next.js Frontend**: Handles user interface and parallel search interactions
+2. **Redis Database**: Stores and indexes country data using sorted sets
+3. **Cloudflare KV**: Provides alternative storage and search capabilities
+4. **Cloudflare Workers API**: Processes search requests at the edge
 
 ## 🚦 Getting Started
 
@@ -35,21 +37,12 @@ The application is built with three main components:
 - Node.js 18+
 - Yarn or npm
 - Upstash Redis account
-- Cloudflare account
+- Cloudflare account with Workers and KV access
 
 ### Installation
 
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/fast-country-search.git
-cd fast-country-search
-```
-
-2. Install dependencies:
-```bash
-yarn install
-```
-
+1. Clone the repository
+2. Install dependencies
 3. Set up environment variables:
 ```bash
 cp .env.example .env.local
@@ -59,16 +52,10 @@ cp .env.example .env.local
 ```
 REDIS_URL=your_redis_url
 REDIS_TOKEN=your_redis_token
+CLOUDFLARE_ACCOUNT_ID=your_account_id
+CLOUDFLARE_API_TOKEN=your_api_token
+CLOUDFLARE_NAMESPACE_ID=your_kv_namespace_id
 ```
-
-### Development
-
-Run the development server:
-```bash
-yarn dev
-```
-
-Visit `http://localhost:3000` to see the application.
 
 ## 📦 Project Structure
 
@@ -77,83 +64,68 @@ Visit `http://localhost:3000` to see the application.
 │   ├── app/
 │   │   ├── api/
 │   │   │   └── [[...route]]/
-│   │   │       └── route.ts    # API endpoints
-│   │   ├── layout.tsx          # Root layout
-│   │   └── page.tsx           # Main search page
+│   │   │       └── route.ts    # API endpoints for Redis and KV
+│   │   ├── components/
+│   │   │   └── ui/            # Shadcn components
+│   │   ├── layout.tsx         # Root layout with theme
+│   │   └── page.tsx          # Main comparison page
 │   ├── lib/
-│   │   └── seed.ts            # Redis seeding script
+│   │   ├── seed.ts           # Redis seeding script
+│   │   └── seed-cloudflare.ts # KV seeding script
 │   └── styles/
-│       └── globals.css        # Global styles
-├── public/
-├── wrangler.toml              # Cloudflare configuration
-└── package.json
+│       └── globals.css       # Global styles and theme
 ```
 
 ## 🔍 Implementation Details
 
-### Frontend Search Component
+### Parallel Search Implementation
 
-The main search functionality is implemented with debouncing and error handling:
+The application performs parallel searches against both Redis and Cloudflare KV:
 
 ```typescript
 const search = async (searchTerm: string) => {
   if (!searchTerm.trim()) {
     setResult(null);
+    setKvResult(null);
     return;
   }
 
-  setIsLoading(true);
-  setError(null);
-
-  try {
-    const response = await fetch(
-      `https://search-redis.fast-search.workers.dev/api/search?input=${encodeURIComponent(searchTerm)}`,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-
-    // ... response handling
-  } catch (err) {
-    setError({ 
-      message: err instanceof Error ? err.message : 'An unexpected error occurred' 
-    });
-  }
+  // Parallel search execution
+  Promise.all([
+    searchRedis(searchTerm),
+    searchKV(searchTerm)
+  ]).catch(err => {
+    console.error('Search error:', err);
+  });
 };
 ```
 
-### API Implementation
+### Performance Comparison
 
-The search API endpoint uses Hono and Redis for efficient prefix matching:
+The UI displays real-time performance metrics for both storage solutions:
 
-```typescript
-app.get('/search', async (c) => {
-  const input = c.req.query('input')?.toUpperCase();
-  const redis = new Redis({
-    url: process.env.REDIS_URL,
-    token: process.env.REDIS_TOKEN,
-  });
-
-  const res = [];
-  const rank = await redis.zrank('terms', input);
-
-  // ... search logic
-});
-```
+- Response time comparison
+- Result count comparison
+- Search accuracy comparison
 
 ## 🎨 Styling
 
-The application uses Tailwind CSS with a custom theme configuration supporting both light and dark modes. Theme variables are defined in `globals.css`.
+The application uses Tailwind CSS with Shadcn/ui components for a consistent design system:
+
+- Dark/Light theme support
+- Custom color variables
+- Responsive design
+- Accessible components
 
 ## 📈 Performance Optimizations
 
-1. **Debounced Search**: Prevents excessive API calls
+1. **Parallel Execution**: Simultaneous Redis and KV queries
 2. **Edge Computing**: Low-latency responses
-3. **Efficient Data Structure**: Redis sorted sets
-4. **Type Safety**: TypeScript implementation
-5. **Client-side Caching**: State management
+3. **Efficient Data Structures**: 
+   - Redis: Sorted sets for prefix matching
+   - KV: Key-based prefix search
+4. **Type Safety**: Full TypeScript implementation
+5. **Client-side State Management**: Optimized rendering
 
 ## 🚀 Deployment
 
@@ -187,12 +159,13 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 - [Next.js](https://nextjs.org/)
 - [Upstash Redis](https://upstash.com/)
 - [Cloudflare Workers](https://workers.cloudflare.com/)
+- [Cloudflare KV](https://developers.cloudflare.com/workers/runtime-apis/kv)
 - [Hono](https://hono.dev/)
 - [Tailwind CSS](https://tailwindcss.com/)
+- [Shadcn/ui](https://ui.shadcn.com/)
 
 ## 📧 Contact
 
-Your Name - [@yourtwitter](https://twitter.com/yourtwitter)
 
 Project Link: [https://github.com/yourusername/fast-country-search](https://github.com/yourusername/fast-country-search)
 ```

@@ -38,3 +38,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# wrangler
+wrangler.toml
+
+# env
+.env
+
+src/lib/seed-cloudflare.ts
+src/lib/seed.ts
