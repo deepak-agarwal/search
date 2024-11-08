@@ -1,6 +1,0 @@
-name = "country-search"
-compatibility_date = '2024-11-06'
-
-[vars]
-redis_token = "AVo5AAIjcDE1MDBhM2M1OTFiNmU0NzM1ODAyOGVkYTVjOTA4ZDdlYXAxMA"
-redis_url = "https://willing-snail-23097.upstash.io"
